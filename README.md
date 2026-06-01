@@ -2,7 +2,7 @@
 
 This directory contains the firmware for a [TECHMobile](https://www.techmobileohio.org/) educational demo project using a Raspberry Pi Pico, a breadboard, and components from an [Elegoo 37 Sensor Kit](https://www.amazon.com/ELEGOO-Upgraded-Tutorial-Compatible-MEGA2560/dp/B01MG49ZQ5).
 
-See [the google doc](https://docs.google.com/document/d/1g_6uoyfyK8KvBRkyh1Naovmq_lL-QZgJ0V9mrtoPw3k/) for more detailed information and instructions on conducting the demo.
+See [the google doc](https://docs.google.com/document/d/e/2PACX-1vQrhJbQW3c49qg2w7oQRWO-dKhDlUO1SbIggbBmVL6XHFji3PR7_5Z9JtABdyG7Q0ynftrKgcPoH7tl/pub) for more detailed information and instructions on conducting the demo.
 The firmware is pre-installed on the device, and the student activity involves hooking up a few different combinations of sensors and output devices.
 
 This project is managed and built with [PlatformIO](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide), which is available as an extension for [VSCode](https://code.visualstudio.com/). PlatformIO was used because it has access to the large colleciton of hobbyist libraries and drivers in the Arduino framework, but provides a better way to manage packages and versions.
