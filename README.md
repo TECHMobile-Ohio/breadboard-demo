@@ -1,4 +1,4 @@
-# pico-breadboard-demo
+# breadboard-demo
 
 This directory contains the firmware for a [TECHMobile](https://www.techmobileohio.org/) educational demo project using a breadboard and components from an [Elegoo 37 Sensor Kit](https://www.amazon.com/ELEGOO-Upgraded-Tutorial-Compatible-MEGA2560/dp/B01MG49ZQ5).
 
