@@ -6,17 +6,28 @@ It will play increasing tones on the buzzer based on which key is pressed.
 
 #include <Arduino.h>
 
-#include <hardware/clocks.h>
+// Only include low-level hardware clocks if compiling for the Pico
+#if defined(ARDUINO_ARCH_RP2040)
+  #include <hardware/clocks.h>
+#endif
 
 // macro to get the length of a fixed-size array
 #define LEN(A) (sizeof(A) / sizeof((A)[0]))
 
-// Row and Column pins for 4x4 keyboard
-static const uint cols[] = {10, 11, 12, 13};
-static const uint rows[] = {6, 7, 8, 9};
-
-// Output pin for passive buzzer
-static const uint buzzer = 14;
+// --- AUTOMATIC PIN MAPPING ---
+#if defined(ESP32)
+  // Safe Row and Column pins for ESP32 4x4 keyboard
+  static const uint cols[] = {19, 21, 22, 23};
+  static const uint rows[] = {13, 16, 17, 18};
+  // Output pin for passive buzzer on ESP32
+  static const uint buzzer = 15;
+#else 
+  // Row and Column pins for Pico 4x4 keyboard
+  static const uint cols[] = {10, 11, 12, 13};
+  static const uint rows[] = {6, 7, 8, 9};
+  // Output pin for passive buzzer on Pico
+  static const uint buzzer = 14;
+#endif
 
 // Get the index (0-15) of the key that is currently pressed (or -1 if no key
 // pressed).
@@ -49,36 +60,46 @@ static int get_key() {
 // Set the specified pin to output a signal at the specified frequency using
 // pulse-width-modulation
 static void tone_pwm(const uint pin, const uint freq) {
-    const uint slice = pwm_gpio_to_slice_num(pin);
+    #if defined(ARDUINO_ARCH_RP2040)
+        // --- Raspberry Pi Pico Specific PWM Logic ---
+        const uint slice = pwm_gpio_to_slice_num(pin);
 
-    // frequency 0 - no sound. Turn the PWM off and exit
-    if (0 == freq) {
-        pwm_set_enabled(slice, false);
-        return;
-    }
+        // frequency 0 - no sound. Turn the PWM off and exit
+        if (0 == freq) {
+            pwm_set_enabled(slice, false);
+            return;
+        }
 
-    gpio_set_function(pin, GPIO_FUNC_PWM);
+        gpio_set_function(pin, GPIO_FUNC_PWM);
 
-    const uint32_t clock = clock_get_hz(clk_sys);
+        const uint32_t clock = clock_get_hz(clk_sys);
 
-    float div = 1.0;
-    uint32_t top = (clock / freq) - 1;
+        float div = 1.0;
+        uint32_t top = (clock / freq) - 1;
 
-    while (top > 0xFFFF) {
-        top /= 2;
-        div *= 2;
-    }
+        while (top > 0xFFFF) {
+            top /= 2;
+            div *= 2;
+        }
 
-    pwm_set_clkdiv(slice, div);
-    pwm_set_wrap(slice, top);
+        pwm_set_clkdiv(slice, div);
+        pwm_set_wrap(slice, top);
 
-    pwm_set_chan_level(slice, pwm_gpio_to_channel(pin), top / 2);
+        pwm_set_chan_level(slice, pwm_gpio_to_channel(pin), top / 2);
 
-    pwm_set_enabled(slice, true);
+        pwm_set_enabled(slice, true);
+    #else
+        // --- ESP32 Standard Arduino Tone Logic ---
+        if (0 == freq) {
+            noTone(pin); // frequency 0 - no sound. Turn the tone off.
+        } else {
+            tone(pin, freq); // play the specified frequency natively
+        }
+    #endif
 }
 
 // This will hold the frequencies for the 16 notes.
-// The first one is A (440 hertz). We will compute the rest in the setup.
+// The first one is A (440 hertz). Compute the rest in the setup.
 static float tones[16] = {440};
 
 // run once to configure the hardware for the demo

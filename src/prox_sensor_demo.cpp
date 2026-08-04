@@ -8,12 +8,22 @@ sensor.
 
 #include <Arduino.h>
 
-// Trigger and echo pins for ultrasonic distance sensor
-static const uint trigPin = 20;
-static const uint echoPin = 21;
+// --- AUTOMATIC PIN MAPPING ---
+#if defined(ESP32)
+  // Trigger and echo pins for ESP32 ultrasonic distance sensor
+  static const uint trigPin = 32;
+  static const uint echoPin = 33;
 
-// red, green, blue pins for multi-color LED
-static const uint rPin = 3, gPin = 4, bPin = 5;
+  // red, green, blue pins for ESP32 multi-color LED
+  static const uint rPin = 26, gPin = 27, bPin = 14;
+#else 
+  // Trigger and echo pins for Pico ultrasonic distance sensor
+  static const uint trigPin = 20;
+  static const uint echoPin = 21;
+
+  // red, green, blue pins for Pico multi-color LED
+  static const uint rPin = 3, gPin = 4, bPin = 5;
+#endif
 
 // set the red, green, and blue levels for the RGB LED
 static void set_rgb(uint r, uint g, uint b) {
@@ -24,18 +34,23 @@ static void set_rgb(uint r, uint g, uint b) {
 
 // read the current distance from the ultrasonic distance sensor in centimeters
 static float read_distance() {
-    // turn the distance sensor trigger pin on for 10 microseconds, then back
-    // off digitalWrite(trigPin, LOW);
+    // turn the distance sensor trigger pin on for 10 microseconds, then back off
+    digitalWrite(trigPin, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPin, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
 
-    // check how long it takes for the echo pin to receive the sonar signal back
-    const float duration = pulseIn(echoPin, HIGH);
+    // Add a 30,000us (30ms) timeout (~5 meters max) so pulseIn doesn't wait forever
+    const float duration = pulseIn(echoPin, HIGH, 30000);
+
+    // If no echo was received, return -1 (invalid)
+    if (duration == 0) {
+        return -1;
+    }
 
     // convert to CM and return the value
-    return (duration * .0343) / 2;
+    return (duration * 0.0343) / 2;
 }
 
 // run once to configure the hardware for the demo
@@ -57,6 +72,12 @@ void prox_sensor_demo_main_loop() {
     while (true) {
         const float distance = read_distance();
 
+        // IF READING IS INVALID (-1), IGNORE IT AND KEEP PREVIOUS COLOR
+        if (distance < 0) {
+            delay(50);
+            continue;
+        }
+
         uint red = 0;
         uint green = 0;
         uint blue = 0;
@@ -75,10 +96,6 @@ void prox_sensor_demo_main_loop() {
 
         } else {
             // distance is less than 25 CM: alternate flashing red and blue
-
-            // get the current time in milliseconds, and get the remainder of
-            // division by 200, see if that's greater than 100. This is how we
-            // alternate red/blue every 100ms.
             if ((millis() % 200) > 100) {
                 red = 255;
             } else {
